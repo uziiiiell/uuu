@@ -1,0 +1,23 @@
+{
+  "name": "lavanderia-api",
+  "version": "0.2.0",
+  "description": "SIGLA: API REST de gestión de lavandería (DIA-117 Programación Aplicada)",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "node --watch src/server.js",
+    "db": "mysql -u root -p < database/esquema.sql",
+    "semilla": "node database/semilla.js"
+  },
+  "dependencies": {
+    "bcryptjs": "^2.4.3",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "express": "^5.1.0",
+    "helmet": "^8.0.0",
+    "jsonwebtoken": "^9.0.2",
+    "mysql2": "^3.11.0"
+  },
+  "license": "UNLICENSED",
+  "private": true
+}

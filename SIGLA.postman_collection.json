@@ -1,0 +1,933 @@
+{
+  "info": {
+    "name": "SIGLA · API de Lavandería",
+    "description": "Colección de pruebas. Ejecutar con el Runner sobre una base recién creada: npm run db, npm run semilla, npm start. Hito 2: salud, autenticación, servicios, clientes y prendas.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "1. Salud y autenticación",
+      "item": [
+        {
+          "name": "Salud de la API",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 200', () => pm.response.to.have.status(200));",
+                  "pm.test('La respuesta es JSON', () => pm.expect(pm.response.headers.get('Content-Type')).to.include('application/json'));",
+                  "pm.test('La API y la base responden', () => {",
+                  "  const j = pm.response.json();",
+                  "  pm.expect(j.estado).to.eql('ok');",
+                  "  pm.expect(j.base_datos).to.eql('ok');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "auth": {
+              "type": "noauth"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/salud",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "salud"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Login admin",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 200', () => pm.response.to.have.status(200));",
+                  "const j = pm.response.json();",
+                  "pm.test('Devuelve token, expira_en y usuario admin', () => {",
+                  "  pm.expect(j.token).to.be.a('string').and.not.empty;",
+                  "  pm.expect(j.expira_en).to.eql('2h');",
+                  "  pm.expect(j.usuario.rol).to.eql('admin');",
+                  "});",
+                  "pm.test('Nunca devuelve el hash', () => pm.expect(pm.response.text()).to.not.include('hash'));",
+                  "pm.collectionVariables.set('token_admin', j.token);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "auth": {
+              "type": "noauth"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/auth/login",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "login"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"correo\": \"{{admin_correo}}\",\n  \"clave\": \"{{admin_clave}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Login operador",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 200', () => pm.response.to.have.status(200));",
+                  "const j = pm.response.json();",
+                  "pm.test('El usuario es operador', () => pm.expect(j.usuario.rol).to.eql('operador'));",
+                  "pm.collectionVariables.set('token_operador', j.token);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "auth": {
+              "type": "noauth"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/auth/login",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "login"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"correo\": \"{{operador_correo}}\",\n  \"clave\": \"{{operador_clave}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Login con clave incorrecta (401)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 401', () => pm.response.to.have.status(401));",
+                  "pm.test('Mensaje genérico, no revela si el correo existe', () =>",
+                  "  pm.expect(pm.response.json().error).to.eql('Credenciales inválidas'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "auth": {
+              "type": "noauth"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/auth/login",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "login"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"correo\": \"{{admin_correo}}\",\n  \"clave\": \"ClaveEquivocada9\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Perfil sin token (401)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 401', () => pm.response.to.have.status(401));",
+                  "pm.test('La respuesta es JSON', () => pm.expect(pm.response.headers.get('Content-Type')).to.include('application/json'));",
+                  "pm.test('Trae el campo error', () => pm.expect(pm.response.json().error).to.be.a('string'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "auth": {
+              "type": "noauth"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/auth/perfil",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "perfil"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "2. Servicios (catálogo 1)",
+      "item": [
+        {
+          "name": "Crear servicio como admin (201)",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.collectionVariables.set('servicio_nombre', 'Servicio ' + Date.now());"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 201', () => pm.response.to.have.status(201));",
+                  "const j = pm.response.json();",
+                  "pm.test('Devuelve el recurso con su id', () => {",
+                  "  pm.expect(j.id).to.be.a('number');",
+                  "  pm.expect(j.nombre).to.eql(pm.collectionVariables.get('servicio_nombre'));",
+                  "  pm.expect(j.precio).to.eql(45.5);",
+                  "  pm.expect(j.tipo_cobro).to.eql('unidad');",
+                  "});",
+                  "pm.collectionVariables.set('servicio_id', j.id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_admin}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/api/servicios",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "servicios"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"{{servicio_nombre}}\",\n  \"descripcion\": \"Creado desde Postman\",\n  \"tipo_cobro\": \"unidad\",\n  \"precio\": 45.5\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Crear servicio como operador (403)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 403', () => pm.response.to.have.status(403));",
+                  "pm.test('Mensaje de permiso', () => pm.expect(pm.response.json().error).to.include('permiso'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_operador}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/api/servicios",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "servicios"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Servicio no permitido\",\n  \"tipo_cobro\": \"kilo\",\n  \"precio\": 10\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Crear servicio con varios campos inválidos (400)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 400', () => pm.response.to.have.status(400));",
+                  "const j = pm.response.json();",
+                  "pm.test('Formato único de error', () => pm.expect(j.error).to.eql('Datos inválidos'));",
+                  "pm.test('Lista todos los campos que fallaron', () => {",
+                  "  const campos = j.detalles.map(d => d.campo);",
+                  "  pm.expect(campos).to.have.members(['nombre', 'tipo_cobro', 'precio']);",
+                  "  j.detalles.forEach(d => pm.expect(d.mensaje).to.be.a('string').and.not.empty);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_admin}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/api/servicios",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "servicios"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"ab\",\n  \"tipo_cobro\": \"peso\",\n  \"precio\": \"10\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Listar servicios con paginación",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 200', () => pm.response.to.have.status(200));",
+                  "const j = pm.response.json();",
+                  "pm.test('Trae datos y paginacion', () => {",
+                  "  pm.expect(j.datos).to.be.an('array').with.length.of.at.most(2);",
+                  "  pm.expect(j.paginacion).to.have.all.keys('pagina', 'limite', 'total', 'paginas');",
+                  "  pm.expect(j.paginacion.limite).to.eql(2);",
+                  "});",
+                  "pm.test('Ordenado por precio de mayor a menor', () => {",
+                  "  const p = j.datos.map(s => s.precio);",
+                  "  pm.expect(p).to.eql([...p].sort((a, b) => b - a));",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_operador}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/api/servicios?pagina=1&limite=2&orden=precio&dir=desc",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "servicios"
+              ],
+              "query": [
+                {
+                  "key": "pagina",
+                  "value": "1"
+                },
+                {
+                  "key": "limite",
+                  "value": "2"
+                },
+                {
+                  "key": "orden",
+                  "value": "precio"
+                },
+                {
+                  "key": "dir",
+                  "value": "desc"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "3. Clientes (catálogo 2)",
+      "item": [
+        {
+          "name": "Crear cliente (201)",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const t = Date.now();",
+                  "pm.collectionVariables.set('cliente_identidad', 'T' + t);",
+                  "pm.collectionVariables.set('cliente_nombre', 'Cliente Prueba ' + t);"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 201', () => pm.response.to.have.status(201));",
+                  "const j = pm.response.json();",
+                  "pm.test('Devuelve el cliente creado', () => {",
+                  "  pm.expect(j.id).to.be.a('number');",
+                  "  pm.expect(j.identidad).to.eql(pm.collectionVariables.get('cliente_identidad'));",
+                  "  pm.expect(j.telefono).to.eql('9999-1234');",
+                  "});",
+                  "pm.collectionVariables.set('cliente_id', j.id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_operador}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/api/clientes",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "clientes"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"identidad\": \"{{cliente_identidad}}\",\n  \"nombre\": \"{{cliente_nombre}}\",\n  \"telefono\": \"9999-1234\",\n  \"correo\": \"prueba@correo.hn\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Crear cliente con identidad repetida (409)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 409', () => pm.response.to.have.status(409));",
+                  "pm.test('Mensaje claro', () => pm.expect(pm.response.json().error).to.include('identidad'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_operador}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/api/clientes",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "clientes"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"identidad\": \"{{cliente_identidad}}\",\n  \"nombre\": \"Otro Nombre\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Buscar clientes por texto (sin tildes)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 200', () => pm.response.to.have.status(200));",
+                  "const j = pm.response.json();",
+                  "pm.test('Encuentra a María Fernanda Mejía de la semilla', () => {",
+                  "  pm.expect(j.datos.length).to.be.at.least(1);",
+                  "  pm.expect(j.datos.some(c => c.nombre.includes('Mejía'))).to.be.true;",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_operador}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/api/clientes?buscar=mejia",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "clientes"
+              ],
+              "query": [
+                {
+                  "key": "buscar",
+                  "value": "mejia"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Búsqueda con intento de inyección SQL",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 200 (no 500)', () => pm.response.to.have.status(200));",
+                  "pm.test('Se trata como texto: no devuelve todos los clientes', () => {",
+                  "  const j = pm.response.json();",
+                  "  pm.expect(j.datos).to.have.lengthOf(0);",
+                  "  pm.expect(j.paginacion.total).to.eql(0);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_operador}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/api/clientes?buscar=%27%20OR%20%271%27%3D%271",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "clientes"
+              ],
+              "query": [
+                {
+                  "key": "buscar",
+                  "value": "' OR '1'='1"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "4. Prendas (entidad principal)",
+      "item": [
+        {
+          "name": "Crear prenda intentando forzar el estado (201)",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.collectionVariables.set('prenda_codigo', 'PR-' + Date.now());"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 201', () => pm.response.to.have.status(201));",
+                  "const j = pm.response.json();",
+                  "pm.test('El estado enviado por el cliente se ignora', () => pm.expect(j.estado).to.eql('recibida'));",
+                  "pm.test('Incluye el cliente (JOIN)', () => {",
+                  "  pm.expect(j.cliente.id).to.eql(Number(pm.collectionVariables.get('cliente_id')));",
+                  "  pm.expect(j.cliente.nombre).to.eql(pm.collectionVariables.get('cliente_nombre'));",
+                  "});",
+                  "pm.collectionVariables.set('prenda_id', j.id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_operador}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/api/prendas",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "prendas"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"cliente_id\": {{cliente_id}},\n  \"codigo_etiqueta\": \"{{prenda_codigo}}\",\n  \"descripcion\": \"Camisa de prueba\",\n  \"tipo\": \"camisa\",\n  \"color\": \"azul\",\n  \"estado\": \"entregada\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Listar prendas con filtros combinados",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 200', () => pm.response.to.have.status(200));",
+                  "const j = pm.response.json();",
+                  "pm.test('Devuelve solo la prenda creada', () => {",
+                  "  pm.expect(j.datos).to.have.lengthOf(1);",
+                  "  pm.expect(j.datos[0].id).to.eql(Number(pm.collectionVariables.get('prenda_id')));",
+                  "  pm.expect(j.datos[0].estado).to.eql('recibida');",
+                  "  pm.expect(j.paginacion.total).to.eql(1);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_operador}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/api/prendas?cliente_id={{cliente_id}}&estado=recibida&buscar={{prenda_codigo}}&orden=id&dir=desc",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "prendas"
+              ],
+              "query": [
+                {
+                  "key": "cliente_id",
+                  "value": "{{cliente_id}}"
+                },
+                {
+                  "key": "estado",
+                  "value": "recibida"
+                },
+                {
+                  "key": "buscar",
+                  "value": "{{prenda_codigo}}"
+                },
+                {
+                  "key": "orden",
+                  "value": "id"
+                },
+                {
+                  "key": "dir",
+                  "value": "desc"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Listar prendas con limite excesivo (400)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 400', () => pm.response.to.have.status(400));",
+                  "pm.test('Señala el campo limite', () => {",
+                  "  const j = pm.response.json();",
+                  "  pm.expect(j.error).to.eql('Datos inválidos');",
+                  "  pm.expect(j.detalles[0].campo).to.eql('limite');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_operador}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/api/prendas?limite=500",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "prendas"
+              ],
+              "query": [
+                {
+                  "key": "limite",
+                  "value": "500"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:3000"
+    },
+    {
+      "key": "admin_correo",
+      "value": "admin@sigla.hn"
+    },
+    {
+      "key": "admin_clave",
+      "value": "Admin2026!"
+    },
+    {
+      "key": "operador_correo",
+      "value": "operador@sigla.hn"
+    },
+    {
+      "key": "operador_clave",
+      "value": "Operador2026!"
+    },
+    {
+      "key": "token_admin",
+      "value": ""
+    },
+    {
+      "key": "token_operador",
+      "value": ""
+    }
+  ]
+}
